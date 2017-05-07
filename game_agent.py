@@ -212,8 +212,60 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        return self._minimax(game, depth)[0]
+
+    def _minimax(self, game, depth):
+        """Actual implementation of minimax with more convenient return type.
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        ((int, int), int)
+            Tuple of best move found and its score, although best move found
+            will be None for leaf nodes of search and (-1, -1) for nodes where
+            no moves are possible (since the game is over)
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # base case- if reaching max depth, return score for game state
+        if depth == 0:
+            return (None, self.score(game, self))
+
+        # keep track of best move found, if no legal moves will be (-1, -1)
+        best_move_found = (-1, -1)
+
+        # detect which player is active to determine if at min or max node
+        # f is evaluation function for comparing moves (either min or max)
+        # v is value of best move found so far
+        if game.active_player == self:
+            v = float('-inf')
+            f = max
+        else:
+            v = float('inf')
+            f = min
+
+        # loop over all legal moves for current player
+        for move in game.get_legal_moves():
+            # generate new game with that move applied
+            forecast = game.forecast_move(move)
+            # recursively call minimax at lower depth for forecasted game
+            forecast_v = self._minimax(forecast, depth - 1)[1]
+            # if forecasted game satisfies evaluation function, record it
+            if f(v, forecast_v) == forecast_v:
+                best_move_found = move
+                v = f(v, forecast_v)
+
+        return (best_move_found, v)
 
 
 class AlphaBetaPlayer(IsolationPlayer):
