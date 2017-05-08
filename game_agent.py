@@ -374,5 +374,76 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        return self._alphabeta(game, depth)[0]
+
+    def _alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+        """Actual implementation of alphabeta with more convenient return type.
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        alpha : float
+            Alpha limits the lower bound of search on minimizing layers
+
+        beta : float
+            Beta limits the upper bound of search on maximizing layers
+
+        Returns
+        -------
+        ((int, int), int)
+            Tuple of best move found and its score, although best move found
+            will be None for leaf nodes of search and (-1, -1) for nodes where
+            no moves are possible (since the game is over)
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # base case- if reaching max depth, return score for game state
+        if depth == 0:
+            return (None, self.score(game, self))
+
+        # keep track of best move found, if no legal moves will be (-1, -1)
+        best_move_found = (-1, -1)
+
+        # detect which player is active to determine if at min or max node
+        # f is evaluation function for comparing moves (either min or max)
+        # v is value of best move found so far
+        # is_alpha determines whether should check alpha or beta
+        if game.active_player == self:
+            v = float('-inf')
+            f = max
+            is_alpha = True
+        else:
+            v = float('inf')
+            f = min
+            is_alpha = False
+
+        # loop over all legal moves for current player
+        for move in game.get_legal_moves():
+            # generate new game with that move applied
+            forecast = game.forecast_move(move)
+            # recursively call alphabeta at lower depth for forecasted game
+            forecast_v = self._alphabeta(forecast, depth - 1, alpha, beta)[1]
+            # if forecasted game satisfies evaluation function, record it
+            if f(v, forecast_v) == forecast_v:
+                best_move_found = move
+                v = f(v, forecast_v)
+
+            # prune if we can
+            if ((is_alpha and v >= beta) or (not is_alpha and v <= alpha)):
+                return (best_move_found, v)
+
+            # update alpha or beta
+            if is_alpha:
+                alpha = max(alpha, v)
+            else:
+                beta = min(beta, v)
+
+        return (best_move_found, v)
