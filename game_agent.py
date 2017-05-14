@@ -34,8 +34,26 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    # always score terminal states first
+    if game.is_winner(player):
+        return float('inf')
+    if game.is_loser(player):
+        return float('-inf')
+
+    player_moves = len(game.get_legal_moves(player))
+    opponent_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    # increase aggression towards end game
+    aggression = 1.
+    percent_over = float(len(game.get_blank_spaces())) / (game.width * game.height)
+    if percent_over <= .5:
+        aggression = 1.15
+    elif percent_over <= .25:
+        aggression = 1.25
+    elif percent_over <= .10:
+        aggression = 1.5
+
+    return player_moves - (aggression * opponent_moves)
 
 
 def custom_score_2(game, player):
@@ -60,8 +78,25 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    # always score terminal states first
+    if game.is_winner(player):
+        return float('inf')
+    if game.is_loser(player):
+        return float('-inf')
+
+    # get legal moves for both players
+    player_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+
+    # check if there is one stealable move
+    cutthroat_bonus = 0.
+    if len(set(player_moves).intersection(opp_moves)) == 1:
+      if game.active_player == player:
+          cutthroat_bonus += 1.
+      else:
+          cutthroat_bonus -= 1.
+
+    return len(player_moves) - len(opp_moves) + cutthroat_bonus
 
 
 def custom_score_3(game, player):
@@ -86,8 +121,34 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_winner(player):
+        return float('inf')
+    if game.is_loser(player):
+        return float('-inf')
+
+    player_moves = len(game.get_legal_moves(player))
+    opponent_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+    # add reward for central board positions
+    position_bonus = 0
+    x, y = game.get_player_location(player)
+    x_centralness = float(x) / game.width
+    y_centralness = float(y) / game.height
+    if .333 <= x_centralness or x_centralness <= .667:
+      position_bonus += .5
+    if .333 <= y_centralness or y_centralness <= .667:
+      position_bonus += .5
+
+    # also reward when opponent is non-central
+    opp_x, opp_y = game.get_player_location(game.get_opponent(player))
+    x_opp_centralness = float(opp_x) / game.width
+    y_opp_centralness = float(opp_y) / game.height
+    if .333 > x_opp_centralness or x_opp_centralness > .667:
+      position_bonus += .5
+    if .333 > y_opp_centralness or y_opp_centralness > .667:
+      position_bonus += .5
+
+    return player_moves - opponent_moves + position_bonus
 
 
 class IsolationPlayer:
